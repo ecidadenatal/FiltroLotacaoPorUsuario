@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<modification>
+  <name>FiltroLotacaoPorUsuario</name>
+  <id>FiltroLotacaoPorUsuario</id>
+  <ecidade-version>2.3.39</ecidade-version>
+  <file path='model/pessoal/std/DBPessoal.model.php'>
+    <operation>
+      <search regex="true"><![CDATA[(public static function setEstruturaFolhaPagamento)]]></search>
+      <add>
+        <![CDATA[
+  /**
+   * Função que busca as permissões das lotações dos usuários e retorna um array com as informações 
+   * 
+   * @param integer $iCodigoUsuario  - Código do Usurio
+   * @param integer $iInstit         - Instituição da busca das permissões 
+   * @param integer $iAno            - Ano da Folha
+   * @param integer $iMes            - Mes da Folha
+   * @param string $sTipo            - Tipo de Retorno 
+   *                                      L: Estrutra das lotações 
+   *                                      S: Somente Secretarias
+   * @throws Exception
+   */        
+  public static function buscaLotacoesPorUsuario($iCodigoUsuario = null, $iInstit = null, $iAno = null, $iMes = null, $sTipo = "L") {
+  
+    try {
+  
+        $oDaoCfpess           = new cl_cfpess();
+        $oDaoDbUsuarioLotacao = new cl_db_usuariosrhlota();
+        
+        if (empty($iCodigoUsuario)) {
+          $iCodigoUsuario = db_getsession('DB_id_usuario');
+        }
+        
+        if (empty($iInstit)) {
+          $iInstit        = db_getsession('DB_instit');
+        }
+        
+        if (empty($iAno)) {
+          $iAno           = DBPessoal::getAnoFolha();
+        }
+        
+        if (empty($iMes)) {
+          $iMes           = DBPessoal::getMesFolha();
+        }
+        
+        $aEstruturais         = array();
+        $aResultados          = array();
+  
+        $oRetorno = new stdClass();
+        $oRetorno->lErro = false;
+        $oRetorno->sMsg  = "";
+        $oRetorno->aEstruturais = "";
+        
+        $sSqlMascaraLotacao = $oDaoCfpess->sql_query($iAno, $iMes, $iInstit, "db77_estrut");
+        $rsMascaraLotacao   = db_query($sSqlMascaraLotacao);
+  
+        if (!$rsMascaraLotacao) {
+            throw new Exception("Erro ao buscar a mascara da lotação.");
+        }
+  
+        if (pg_num_rows($rsMascaraLotacao) == 0) {
+            throw new Exception("Nenhuma lotação configurada para esta competência. Por favor verificar manutenção de parâmetros.");
+        }
+  
+        $sMascara = db_utils::fieldsMemory($rsMascaraLotacao,0)->db77_estrut;
+  
+        if ($sTipo == "L") {
+          $sSqlLotacoesUsuario = $oDaoDbUsuarioLotacao->sql_query(null, "distinct r70_estrut", null, "rh157_usuario = {$iCodigoUsuario}");
+        } else {
+          $sSqlLotacoesUsuario = $oDaoDbUsuarioLotacao->sql_query(null, "distinct substr(r70_estrut, 1, 2) as secretaria", null, "rh157_usuario = {$iCodigoUsuario}");
+          
+          $sSqlLotacoesUsuario = "select distinct 
+                                         r70_estrut 
+                                    from rhlota 
+                                         inner join ({$sSqlLotacoesUsuario}) as secretarias on secretaria = substr(r70_estrut, 1, 2)";
+        }
+        
+        $rsLotacoesUsuario   = db_query($sSqlLotacoesUsuario);
+  
+        if (!$rsLotacoesUsuario) {
+            throw new Exception("Erro ao buscar lotações do usuário.");
+        }
+  
+        if (pg_num_rows($rsLotacoesUsuario) == 0) {
+            throw new Exception("Nenhuma lotação vinculada à este usuário.");
+        }
+  
+        $aEstruturais = db_utils::getCollectionByRecord($rsLotacoesUsuario);
+  
+        foreach ($aEstruturais as $oEstrutural) {
+            $aResultados[] = trim(str_replace( ".",'', DBEstrutura::removerEstruturalVazio( DBEstrutura::mascararString($sMascara, $oEstrutural->r70_estrut) ) ) );
+        }
+  
+        //"r70_estrut ~ '^(".implode('|',$aResultados).")'"
+        $oRetorno->aEstruturais = $aResultados; 
+        
+    } catch (Exception $oErro) {
+  
+        $oRetorno->lErro = true;
+        $oRetorno->sMsg = $oErro->getMessage();
+    }
+  
+    return $oRetorno;
+    
+  }        
+        
+  $1]]>
+      </add>
+    </operation>
+  </file>
+  
+</modification>

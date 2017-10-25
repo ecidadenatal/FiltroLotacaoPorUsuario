@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <plugin name="FiltroLotacaoPorUsuario" label="Filtro de Lotação Por Usuario" plugin-version="1.0" ecidade-version="2.3.39" id-modulo="952">
+   <id id="FiltroLotacaoPorUsuario"> </id>
+   <files>
+    <file name="TermoRescisaoSindicato.xml"      path="/modification/xml/FiltroLotacaoPorUsuario.xml" />
+    
+    <file name="pes2_relatoriocontabilsecretaria001_natal.php"      path="/pes2_relatoriocontabilsecretaria001_natal.php" />
+    <file name="pes2_relatoriocontabilsecretaria002_natal.php"      path="/pes2_relatoriocontabilsecretaria002_natal.php" />
+   </files>
+  </plugin>  
+</manifest>
